@@ -1,0 +1,57 @@
+plugins {
+    id 'java'
+}
+
+group = 'org.example'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    implementation 'io.appium:java-client:9.3.0'
+    implementation 'org.seleniumhq.selenium:selenium-java:4.27.0'
+    implementation 'io.cucumber:cucumber-java:7.20.1'
+    testImplementation 'io.cucumber:cucumber-junit-platform-engine:7.20.1'
+    implementation 'net.masterthought:cucumber-reporting:5.8.4'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+configurations {
+    cucumberRuntime {
+        extendsFrom testImplementation
+    }
+}
+
+task cucumber() {
+    dependsOn assemble, testClasses
+    doLast {
+        javaexec {
+            main = "io.cucumber.core.cli.Main"
+            classpath = configurations.cucumberRuntime + sourceSets.main.output + sourceSets.test.output
+            args = [
+                    '--plugin', 'pretty',
+                    '--plugin', 'html:target/cucumber-report.html',
+                    '--plugin', 'json:target/cucumber-report.json',
+                    '--glue', 'runner', // donde estarán mis steps
+                    'src/test/resources',
+                    '--threads', '1',  // ejecucion paralela
+                    '--tags'] + [testSuite] // donde estarán mis archivos con extensión .feature
+        }
+    }
+}
+
+task report() {
+    doLast {
+        javaexec {
+            main = "util.GenerateReport"
+            classpath = sourceSets.test.runtimeClasspath
+        }
+    }
+}
